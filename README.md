@@ -63,12 +63,12 @@ wget https://github.com/sakai135/wsl-vpnkit/releases/download/$VERSION/wsl-vpnki
 tar --strip-components=1 -xf wsl-vpnkit.tar.gz \
     app/wsl-vpnkit \
     app/wsl-gvproxy.exe \
-    app/wsl-vm \
+    app/wsl-gvforwarder \
     app/wsl-vpnkit.service
 rm wsl-vpnkit.tar.gz
 
 # run the wsl-vpnkit script in the foreground
-sudo VMEXEC_PATH=$(pwd)/wsl-vm GVPROXY_PATH=$(pwd)/wsl-gvproxy.exe ./wsl-vpnkit
+sudo GVFORWARDER_PATH=$(pwd)/wsl-gvforwarder GVPROXY_PATH=$(pwd)/wsl-gvproxy.exe ./wsl-vpnkit
 ```
 
 ### Setup systemd
