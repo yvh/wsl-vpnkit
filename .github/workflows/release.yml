@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  IMAGE_NAME: wsl-vpnkit
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "archive=${IMAGE_NAME}-${VERSION}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "tag=${IMAGE_NAME}:${GITHUB_SHA}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        run: |
+          docker build \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --build-arg VERSION="${{ steps.version.outputs.version }}" \
+            .
+
+      - name: Package distro
+        run: |
+          CONTAINER_ID="$(docker create "${{ steps.version.outputs.tag }}")"
+          docker export "$CONTAINER_ID" | gzip > "${{ steps.version.outputs.archive }}"
+          docker container rm "$CONTAINER_ID"
+          sha256sum "${{ steps.version.outputs.archive }}" | tee "${{ steps.version.outputs.archive }}.sha256"
+
+      - name: Create release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.version.outputs.archive }}
+            ${{ steps.version.outputs.archive }}.sha256
+          generate_release_notes: true
