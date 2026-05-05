@@ -13,7 +13,7 @@ for var in http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY; do
         build_args+=(--build-arg "$var=${!var}")
     fi
 done
-${DOCKER} build --network host "${build_args[@]}" --tag ${TAG_NAME} .
+${DOCKER} build "${build_args[@]}" --tag ${TAG_NAME} .
 CONTAINER_ID=$(${DOCKER} create ${TAG_NAME})
 ${DOCKER} export "${CONTAINER_ID}" | gzip > ${DUMP}
 ${DOCKER} container rm "${CONTAINER_ID}"
