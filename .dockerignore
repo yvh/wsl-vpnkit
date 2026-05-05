@@ -1,6 +1,10 @@
 .git
 .github
-.dockerignore
-distro/Dockerfile
+*.tar
+*.tar.gz
+*.zip
 README.md
-distro/test.sh
+LICENSE
+build.sh
+import.sh
+.gitignore
