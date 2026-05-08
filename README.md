@@ -111,23 +111,25 @@ systemctl status wsl-vpnkit
 
 ## Build
 
-GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.0.tar.gz`, and include a matching `.sha256` checksum file.
-
-Versioned release archive names are intentional. They make release assets immutable, avoid filename collisions between tags, and keep checksum files unambiguous. Local builds still use the simpler `wsl-vpnkit.tar.gz` name for convenience with `import.sh`.
+`build.sh` builds the Docker image from the repository `Dockerfile`, exports the container root filesystem, and writes `./wsl-vpnkit.tar.gz`. Docker is used by default; set `DOCKER=podman` to use Podman instead.
 
 ```sh
-# build with alpine image to ./wsl-vpnkit.tar.gz
-./build.sh alpine
+# build to ./wsl-vpnkit.tar.gz
+./build.sh
 
-# build with fedora using Podman
-DOCKER=podman ./build.sh fedora
+# build using Podman
+DOCKER=podman ./build.sh
 
-# import the built distro from ./wsl-vpnkit.tar.gz
+# import the local build into WSL
 ./import.sh
 
 # run using the imported distro
 wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
 ```
+
+GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.0.tar.gz`, and include a matching `.sha256` checksum file.
+
+Versioned release archive names are intentional. They make release assets immutable, avoid filename collisions between tags, and keep checksum files unambiguous. Local builds still use the simpler `wsl-vpnkit.tar.gz` name for convenience with `import.sh`.
 
 ## Troubleshooting
 
