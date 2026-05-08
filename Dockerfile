@@ -2,7 +2,7 @@ FROM alpine:3.23 AS gvisor-tap-vsock
 
 WORKDIR /app/bin
 
-ARG GVISOR_TAP_VSOCK_VERSION=v0.8.8
+ARG GVISOR_TAP_VSOCK_VERSION=v0.8.7
 
 RUN wget https://github.com/containers/gvisor-tap-vsock/releases/download/${GVISOR_TAP_VSOCK_VERSION}/gvproxy-windows.exe && \
     wget https://github.com/containers/gvisor-tap-vsock/releases/download/${GVISOR_TAP_VSOCK_VERSION}/gvforwarder && \
