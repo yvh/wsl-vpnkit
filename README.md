@@ -1,6 +1,8 @@
 # wsl-vpnkit
 
-The `wsl-vpnkit` v0.4 script uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) to provide network connectivity to the WSL 2 VM while connected to VPNs on the Windows host. This requires no settings changes or admin privileges on the Windows host.
+This repository is based on the upstream [`sakai135/wsl-vpnkit`](https://github.com/sakai135/wsl-vpnkit) project. Release artifacts in this fork use `gvforwarder` from `gvisor-tap-vsock` instead of the older `vm` binary name used by some upstream releases.
+
+The `wsl-vpnkit` v0.4+ script uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) to provide network connectivity to the WSL 2 VM while connected to VPNs on the Windows host. This requires no settings changes or admin privileges on the Windows host.
 
 For previous versions, see [v0.3](https://github.com/sakai135/wsl-vpnkit/tree/v0.3.x) and [v0.2](https://github.com/sakai135/wsl-vpnkit/tree/v0.2.x).
 
@@ -14,12 +16,18 @@ Before setting up `wsl-vpnkit`, check if a DNS server change may be enough to ge
 
 #### Install
 
-Download the prebuilt file `wsl-vpnkit.tar.gz` from the [latest release](https://github.com/sakai135/wsl-vpnkit/releases/latest) and import the distro into WSL 2. 
+Download the prebuilt versioned archive from the [latest release](https://github.com/yvh/wsl-vpnkit/releases/latest) and import the distro into WSL 2.
 
 ```pwsh
 # PowerShell
 
-wsl --import wsl-vpnkit --version 2 $env:USERPROFILE\wsl-vpnkit wsl-vpnkit.tar.gz
+$VERSION = "v0.5.0"
+
+Invoke-WebRequest `
+  -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
+  -OutFile "wsl-vpnkit-$VERSION.tar.gz"
+
+wsl --import wsl-vpnkit --version 2 $env:LOCALAPPDATA\wsl\wsl-vpnkit "wsl-vpnkit-$VERSION.tar.gz"
 ```
 
 Run `wsl-vpnkit`. This will run `wsl-vpnkit` in the foreground.
@@ -35,8 +43,14 @@ To update, unregister the existing distro and import the new version.
 ```pwsh
 # PowerShell
 
+$VERSION = "v0.5.0"
+
+Invoke-WebRequest `
+  -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
+  -OutFile "wsl-vpnkit-$VERSION.tar.gz"
+
 wsl --unregister wsl-vpnkit
-wsl --import wsl-vpnkit --version 2 $env:USERPROFILE\wsl-vpnkit wsl-vpnkit.tar.gz
+wsl --import wsl-vpnkit --version 2 $env:LOCALAPPDATA\wsl\wsl-vpnkit "wsl-vpnkit-$VERSION.tar.gz"
 ```
 
 #### Uninstall
@@ -58,14 +72,16 @@ The `wsl-vpnkit` script can be used as a normal script in your existing distro. 
 sudo apt-get install iproute2 iptables iputils-ping dnsutils wget
 
 # download wsl-vpnkit and unpack
-VERSION=v0.4.x
-wget https://github.com/sakai135/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit.tar.gz
-tar --strip-components=1 -xf wsl-vpnkit.tar.gz \
+VERSION=v0.5.0
+wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz"
+wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz.sha256"
+sha256sum -c "wsl-vpnkit-${VERSION}.tar.gz.sha256"
+tar --strip-components=1 -xf "wsl-vpnkit-${VERSION}.tar.gz" \
     app/wsl-vpnkit \
     app/wsl-gvproxy.exe \
     app/wsl-gvforwarder \
     app/wsl-vpnkit.service
-rm wsl-vpnkit.tar.gz
+rm "wsl-vpnkit-${VERSION}.tar.gz" "wsl-vpnkit-${VERSION}.tar.gz.sha256"
 
 # run the wsl-vpnkit script in the foreground
 sudo GVFORWARDER_PATH=$(pwd)/wsl-gvforwarder GVPROXY_PATH=$(pwd)/wsl-gvproxy.exe ./wsl-vpnkit
@@ -95,6 +111,9 @@ systemctl status wsl-vpnkit
 
 ## Build
 
+GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.0.tar.gz`, and include a matching `.sha256` checksum file.
+
+Versioned release archive names are intentional. They make release assets immutable, avoid filename collisions between tags, and keep checksum files unambiguous. Local builds still use the simpler `wsl-vpnkit.tar.gz` name for convenience with `import.sh`.
 
 ```sh
 # build with alpine image to ./wsl-vpnkit.tar.gz
