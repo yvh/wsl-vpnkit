@@ -1,6 +1,6 @@
 # wsl-vpnkit
 
-This repository is based on the upstream [`sakai135/wsl-vpnkit`](https://github.com/sakai135/wsl-vpnkit) project. Release artifacts in this fork use `gvforwarder` from `gvisor-tap-vsock` instead of the older `vm` binary name used by some upstream releases.
+This repository is based on the upstream [`sakai135/wsl-vpnkit`](https://github.com/sakai135/wsl-vpnkit) project. Release artifacts in this fork use `gvforwarder` and `gvproxy-windows.exe` from `gvisor-tap-vsock` with their upstream names.
 
 The `wsl-vpnkit` v0.4+ script uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) to provide network connectivity to the WSL 2 VM while connected to VPNs on the Windows host. This requires no settings changes or admin privileges on the Windows host.
 
@@ -78,13 +78,13 @@ wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-
 sha256sum -c "wsl-vpnkit-${VERSION}.tar.gz.sha256"
 tar --strip-components=1 -xf "wsl-vpnkit-${VERSION}.tar.gz" \
     app/wsl-vpnkit \
-    app/wsl-gvproxy.exe \
-    app/wsl-gvforwarder \
+    app/gvproxy-windows.exe \
+    app/gvforwarder \
     app/wsl-vpnkit.service
 rm "wsl-vpnkit-${VERSION}.tar.gz" "wsl-vpnkit-${VERSION}.tar.gz.sha256"
 
 # run the wsl-vpnkit script in the foreground
-sudo GVFORWARDER_PATH=$(pwd)/wsl-gvforwarder GVPROXY_PATH=$(pwd)/wsl-gvproxy.exe ./wsl-vpnkit
+sudo GVFORWARDER_PATH=$(pwd)/gvforwarder GVPROXY_PATH=$(pwd)/gvproxy-windows.exe ./wsl-vpnkit
 ```
 
 ### Setup systemd
@@ -146,18 +146,18 @@ Versioned release archive names are intentional. They make release assets immuta
 
 On older WSL versions where `/mnt/wsl/resolv.conf` is not available, `wsl-vpnkit` will fallback to using `/etc/resolv.conf`. When setup as a standalone script and using a custom DNS configuration for the distro, the `WSL2_GATEWAY_IP` environment variable should be set for `wsl-vpnkit` to use.
 
-#### wsl-gvproxy.exe is not executable due to WSL interop settings or Windows permissions
+#### gvproxy-windows.exe is not executable due to WSL interop settings or Windows permissions
 
 `wsl-vpnkit` requires that the WSL 2 distro be able to run Windows executables. This [`interop` setting](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#interop-settings) is enabled by default in WSL 2 and in the `wsl-vpnkit` distro.
 
-Security configurations on the Windows host may only permit running executables in certain directories. You can copy `wsl-gvproxy.exe` to an appropriate location and use the `GVPROXY_PATH` environment variable to specify the location.
+Security configurations on the Windows host may only permit running executables in certain directories. You can copy `gvproxy-windows.exe` to an appropriate location and use the `GVPROXY_PATH` environment variable to specify the location.
 
 ```sh
 # enable [automount] in wsl.conf for wsl-vpnkit distro
 wsl.exe -d wsl-vpnkit --cd /app sed -i -- "s/enabled=false/enabled=true/" /etc/wsl.conf
 
 # set GVPROXY_PATH when running wsl-vpnkit
-wsl.exe -d wsl-vpnkit --cd /app GVPROXY_PATH=/mnt/c/path/wsl-gvproxy.exe wsl-vpnkit
+wsl.exe -d wsl-vpnkit --cd /app GVPROXY_PATH=/mnt/c/path/gvproxy-windows.exe wsl-vpnkit
 ```
 
 ### Configuring proxies and certificates
@@ -176,8 +176,8 @@ If VS Code takes a long time to open your folder in WSL, [enable the setting "Co
 # shutdown WSL to reset networking state
 wsl --shutdown
 
-# kill any straggler wsl-gvproxy processes
-kill -Name wsl-gvproxy
+# kill any straggler gvproxy-windows processes
+kill -Name gvproxy-windows
 ```
 
 ### Run service with debug

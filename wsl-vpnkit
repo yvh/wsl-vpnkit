@@ -7,8 +7,8 @@ VPNKIT_LOCAL_IP=${VPNKIT_LOCAL_IP:-192.168.127.2}
 TAP_MAC_ADDR=${TAP_MAC_ADDR:-5a:94:ef:e4:0c:ee}
 
 # overrideable with env
-GVFORWARDER_PATH=${GVFORWARDER_PATH:-/app/wsl-gvforwarder}
-GVPROXY_PATH=${GVPROXY_PATH:-/app/wsl-gvproxy.exe}
+GVFORWARDER_PATH=${GVFORWARDER_PATH:-/app/gvforwarder}
+GVPROXY_PATH=${GVPROXY_PATH:-/app/gvproxy-windows.exe}
 TAP_NAME=${TAP_NAME:-wsltap}
 CHECK_HOST=${CHECK_HOST:-example.com}
 CHECK_DNS=${CHECK_DNS:-1.1.1.1}
@@ -37,7 +37,7 @@ if command -v iptables-legacy >/dev/null 2>&1; then
 fi
 
 run () {
-    echo "starting vm and gvproxy..."
+    echo "starting gvforwarder and gvproxy..."
     "$GVFORWARDER_PATH" \
         -url="stdio:$GVPROXY_PATH?listen-stdio=accept&debug=$DEBUG" \
         -iface="$TAP_NAME" \
@@ -45,7 +45,7 @@ run () {
         -preexisting=1 \
         -debug="$DEBUG" &
     sleep 1 # wait to establish connection
-    echo "started vm and gvproxy"
+    echo "started gvforwarder and gvproxy"
 }
 
 wsl2tap_down () {

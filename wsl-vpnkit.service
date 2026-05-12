@@ -8,7 +8,7 @@ ExecStart=/mnt/c/Windows/system32/wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
 
 # for wsl-vpnkit setup as a standalone script
 #ExecStart=/full/path/to/wsl-vpnkit
-#Environment=GVFORWARDER_PATH=/full/path/to/wsl-gvforwarder GVPROXY_PATH=/full/path/to/wsl-gvproxy.exe
+#Environment=GVFORWARDER_PATH=/full/path/to/gvforwarder GVPROXY_PATH=/full/path/to/gvproxy-windows.exe
 
 Restart=always
 KillMode=mixed
