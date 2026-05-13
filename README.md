@@ -21,7 +21,7 @@ Download the prebuilt versioned archive from the [latest release](https://github
 ```pwsh
 # PowerShell
 
-$VERSION = "v0.5.1"
+$VERSION = "v0.5.2"
 
 Invoke-WebRequest `
   -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
@@ -43,7 +43,7 @@ To update, unregister the existing distro and import the new version.
 ```pwsh
 # PowerShell
 
-$VERSION = "v0.5.1"
+$VERSION = "v0.5.2"
 
 Invoke-WebRequest `
   -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
@@ -72,7 +72,7 @@ The `wsl-vpnkit` script can be used as a normal script in your existing distro. 
 sudo apt-get install iproute2 iptables iputils-ping dnsutils wget
 
 # download wsl-vpnkit and unpack
-VERSION=v0.5.1
+VERSION=v0.5.2
 wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz"
 wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz.sha256"
 sha256sum -c "wsl-vpnkit-${VERSION}.tar.gz.sha256"
@@ -127,7 +127,7 @@ DOCKER=podman ./build.sh
 wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
 ```
 
-GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.1.tar.gz`, and include a matching `.sha256` checksum file.
+GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.2.tar.gz`, and include a matching `.sha256` checksum file.
 
 Versioned release archive names are intentional. They make release assets immutable, avoid filename collisions between tags, and keep checksum files unambiguous. Local builds still use the simpler `wsl-vpnkit.tar.gz` name for convenience with `import.sh`.
 
