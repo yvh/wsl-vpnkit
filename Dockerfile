@@ -1,4 +1,4 @@
-FROM alpine:3.23
+FROM alpine:3.24
 
 ARG GVISOR_TAP_VSOCK_VERSION=v0.8.9
 
