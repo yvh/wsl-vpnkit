@@ -280,8 +280,8 @@ wait_for "wsltap was not created" interface_exists wsltap
 wait_for "wsltap did not receive an address" address_present wsltap "192.168.126.2/24"
 ip link show dev wsltap | grep -q -- "5a:94:ef:e4:0c:ef" ||
     fail "config static lease MAC was not applied"
-grep -q -- "config=$config_query" "$log_dir/vm.log" ||
-    fail "config file was not passed to gvforwarder with URL-safe escaping"
+wait_for "config file was not passed to gvforwarder with URL-safe escaping" \
+    log_contains "$log_dir/vm.log" "config=$config_query"
 stop_background "$log_dir/config.log"
 assert_clean
 
