@@ -3,3 +3,4 @@ wsl-gvproxy.exe
 *.tar
 *.tar.gz
 *.zip
+*.wsl

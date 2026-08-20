@@ -3,6 +3,7 @@
 *.tar
 *.tar.gz
 *.zip
+*.wsl
 README.md
 LICENSE
 build.sh

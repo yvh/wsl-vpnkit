@@ -1,188 +1,163 @@
 # wsl-vpnkit
 
-This repository is based on the upstream [`sakai135/wsl-vpnkit`](https://github.com/sakai135/wsl-vpnkit) project. Release artifacts in this fork use `gvforwarder` and `gvproxy-windows.exe` from `gvisor-tap-vsock` with their upstream names.
+This repository is based on the upstream [`sakai135/wsl-vpnkit`](https://github.com/sakai135/wsl-vpnkit) project. Release artifacts in this fork keep the upstream `gvisor-tap-vsock` executable names: `gvforwarder` and `gvproxy-windows.exe`.
 
-The `wsl-vpnkit` v0.4+ script uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) to provide network connectivity to the WSL 2 VM while connected to VPNs on the Windows host. This requires no settings changes or admin privileges on the Windows host.
-
-For previous versions, see [v0.3](https://github.com/sakai135/wsl-vpnkit/tree/v0.3.x) and [v0.2](https://github.com/sakai135/wsl-vpnkit/tree/v0.2.x).
+`wsl-vpnkit` provides network connectivity to WSL 2 when a Windows VPN blocks access. It does not require Windows settings changes or administrator privileges on the Windows host.
 
 ## Setup
 
-Before setting up `wsl-vpnkit`, check if a DNS server change may be enough to get connectivity by pinging a public IP address from WSL 2. If that works, follow the steps in [WSL has no network connectivity once connected to a VPN](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting#wsl-has-no-network-connectivity-once-connected-to-a-vpn).
+Before installing `wsl-vpnkit`, try `ping 1.2.3.4` inside WSL 2. If it succeeds, follow Microsoft's [WSL VPN troubleshooting](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting#wsl-has-no-network-connectivity-once-connected-to-a-vpn) first. Mirrored networking and other [`.wslconfig` options](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#wslconfig) may also solve the problem.
 
-`wsl-vpnkit` is intended to help when more than a DNS server change is needed.
+### Install as a WSL distro
 
-### Setup as a distro
+Download the versioned AMD64 `.wsl` asset and its checksum from the [latest release](https://github.com/yvh/wsl-vpnkit/releases/latest).
 
-#### Install
-
-Download the prebuilt versioned archive from the [latest release](https://github.com/yvh/wsl-vpnkit/releases/latest) and import the distro into WSL 2.
+Verify the download before opening it:
 
 ```pwsh
 # PowerShell
+$VERSION = "<version>"
+$FILE = "wsl-vpnkit-$VERSION-amd64.wsl"
 
-$VERSION = "v0.5.2"
-
-Invoke-WebRequest `
-  -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
-  -OutFile "wsl-vpnkit-$VERSION.tar.gz"
-
-wsl --import wsl-vpnkit --version 2 $env:LOCALAPPDATA\wsl\wsl-vpnkit "wsl-vpnkit-$VERSION.tar.gz"
+$EXPECTED = (Get-Content "$FILE.sha256").Split()[0].ToLower()
+$ACTUAL = (Get-FileHash -Algorithm SHA256 $FILE).Hash.ToLower()
+if ($ACTUAL -ne $EXPECTED) { throw "Checksum verification failed for $FILE" }
 ```
 
-Run `wsl-vpnkit`. This will run `wsl-vpnkit` in the foreground.
+On WSL 2.4.4 or newer, open the `.wsl` file to install the distribution. Then run:
 
 ```sh
 wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
 ```
 
-#### Update
-
-To update, unregister the existing distro and import the new version.
+For an older WSL release, import it explicitly:
 
 ```pwsh
-# PowerShell
-
-$VERSION = "v0.5.2"
-
-Invoke-WebRequest `
-  -Uri "https://github.com/yvh/wsl-vpnkit/releases/download/$VERSION/wsl-vpnkit-$VERSION.tar.gz" `
-  -OutFile "wsl-vpnkit-$VERSION.tar.gz"
-
-wsl --unregister wsl-vpnkit
-wsl --import wsl-vpnkit --version 2 $env:LOCALAPPDATA\wsl\wsl-vpnkit "wsl-vpnkit-$VERSION.tar.gz"
+wsl --import wsl-vpnkit "$env:LOCALAPPDATA\wsl\wsl-vpnkit" .\wsl-vpnkit-<version>-amd64.wsl --version 2
 ```
 
-#### Uninstall
-
-To uninstall, unregister the distro.
+To update, unregister the old distribution and install the new asset:
 
 ```pwsh
-# PowerShell
-
 wsl --unregister wsl-vpnkit
 ```
 
-### Setup as a standalone script
+### Install as a standalone script
 
-The `wsl-vpnkit` script can be used as a normal script in your existing distro. This is an example setup script for Ubuntu.
+The release distribution can also be unpacked into an existing WSL distro. This Ubuntu example installs all runtime dependencies and executables on `PATH`:
 
 ```sh
-# install dependencies
-sudo apt-get install iproute2 iptables iputils-ping dnsutils wget
+sudo apt-get update
+sudo apt-get install iproute2 iptables dnsutils curl jq yq
 
-# download wsl-vpnkit and unpack
-VERSION=v0.5.2
-wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz"
-wget "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/wsl-vpnkit-${VERSION}.tar.gz.sha256"
-sha256sum -c "wsl-vpnkit-${VERSION}.tar.gz.sha256"
-tar --strip-components=1 -xf "wsl-vpnkit-${VERSION}.tar.gz" \
+VERSION="<version>"
+FILE="wsl-vpnkit-${VERSION}-amd64.wsl"
+
+curl -fLO "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/${FILE}"
+curl -fLO "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/${FILE}.sha256"
+sha256sum -c "${FILE}.sha256"
+
+tar --strip-components=1 -xf "$FILE" \
     app/wsl-vpnkit \
+    app/wsl-vpnkit.yaml \
     app/gvproxy-windows.exe \
     app/gvforwarder \
     app/wsl-vpnkit.service
-rm "wsl-vpnkit-${VERSION}.tar.gz" "wsl-vpnkit-${VERSION}.tar.gz.sha256"
 
-# run the wsl-vpnkit script in the foreground
-sudo GVFORWARDER_PATH=$(pwd)/gvforwarder GVPROXY_PATH=$(pwd)/gvproxy-windows.exe ./wsl-vpnkit
+sudo install -m 0755 wsl-vpnkit gvforwarder gvproxy-windows.exe /usr/local/bin/
+sudo install -m 0644 wsl-vpnkit.service /etc/systemd/system/
+sudo wsl-vpnkit
 ```
 
-### Setup systemd
+### Set up systemd
 
-WSL versions 0.67.6 and later [support systemd](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#systemd-support). Follow the instructions in the link to enable systemd support for your distro.
-
-Create the service file and enable the service. Now `wsl-vpnkit.service` should start with your distro next time.
+WSL versions 0.67.6 and later [support systemd](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#systemd-support). The supplied service uses a local `wsl-vpnkit` installation when available and otherwise invokes the dedicated `wsl-vpnkit` distro.
 
 ```sh
-# wsl-vpnkit setup as a distro
-wsl.exe -d wsl-vpnkit --cd /app cat /app/wsl-vpnkit.service | sudo tee /etc/systemd/system/wsl-vpnkit.service
+# Copy the service from the dedicated distro into the current distro
+wsl.exe -d wsl-vpnkit --cd /app cat /app/wsl-vpnkit.service |
+    sudo tee /etc/systemd/system/wsl-vpnkit.service
 
-# copy and edit for wsl-vpnkit setup as a standalone script
-sudo cp ./wsl-vpnkit.service /etc/systemd/system/
-sudo nano /etc/systemd/system/wsl-vpnkit.service
-
-# enable the service
-sudo systemctl enable wsl-vpnkit
-
-# start and check the status of the service
-sudo systemctl start wsl-vpnkit
+sudo systemctl enable --now wsl-vpnkit
 systemctl status wsl-vpnkit
 ```
 
-## Build
+## Configuration
 
-`build.sh` builds the Docker image from the repository `Dockerfile`, exports the container root filesystem, and writes `./wsl-vpnkit.tar.gz`. Docker is used by default; set `DOCKER=podman` to use Podman instead.
+The most commonly used environment variables are:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `DEBUG` | `0` | Enable shell tracing when set to a non-zero value. |
+| `CHECK_HOST` | `host.containers.internal` | Host name used by startup DNS diagnostics. |
+| `GVFORWARDER_PATH` | `gvforwarder` from `PATH` | Path to the Linux forwarder executable. |
+| `GVPROXY_PATH` | `gvproxy-windows.exe` from `PATH` | Path to the Windows proxy executable. |
+| `GVPROXY_CONFIG` | disabled | Path to a gvproxy YAML configuration file. |
+| `PREEXISTING` | `1` | Create the TAP in the script when `1`; let gvforwarder create it with DHCP when `0`. |
+| `WSL2_GATEWAY_IP` | auto-detected | Original WSL gateway restored during cleanup. |
+| `WSL2_TAP_NAME` | auto-detected | Original WSL interface restored during cleanup. |
+| `TAP_NAME` | `wsltap` | VPN TAP interface name. |
+| `DHCP_TIMEOUT` | `30` | Maximum wait in seconds for a gvforwarder-owned DHCP lease. |
+
+The repository includes [`wsl-vpnkit.yaml`](wsl-vpnkit.yaml) as a gvproxy configuration example. It can customize the subnet, gateway, virtual IPs, static lease and port forwarding:
 
 ```sh
-# build to ./wsl-vpnkit.tar.gz
-./build.sh
-
-# build using Podman
-DOCKER=podman ./build.sh
-
-# import the local build into WSL
-./import.sh
-
-# run using the imported distro
-wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
+sudo GVPROXY_CONFIG=/path/to/wsl-vpnkit.yaml PREEXISTING=0 wsl-vpnkit
 ```
 
-GitHub Actions creates a release when a `v*` tag is pushed. The release assets are named with the tag, for example `wsl-vpnkit-v0.5.2.tar.gz`, and include a matching `.sha256` checksum file.
+## Build and test
 
-Versioned release archive names are intentional. They make release assets immutable, avoid filename collisions between tags, and keep checksum files unambiguous. Local builds still use the simpler `wsl-vpnkit.tar.gz` name for convenience with `import.sh`.
+A local build targets the host architecture and produces `./wsl-vpnkit.wsl`:
+
+```sh
+./build.sh
+
+# Build with Podman
+DOCKER=podman ./build.sh
+
+# Import the local build
+./import.sh
+```
+
+Run the Docker test harness with:
+
+```sh
+./tests/run.sh
+```
+
+The tests exercise startup, cleanup, route and NAT restoration, diagnostics, DHCP mode, configuration parsing, invalid inputs and executable paths containing spaces.
+
+A pushed `v*` tag builds a versioned AMD64 `.wsl` asset. The release workflow publishes its SHA-256 file and build-provenance attestation and embeds SBOM/provenance data in the build.
 
 ## Troubleshooting
 
-### Notes
+### `resolv.conf has been modified without setting generateResolvConf`
 
-* Ports on the WSL 2 VM are [accessible from the Windows host using `localhost`](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-linux-networking-apps-from-windows-localhost).
-* Ports on the Windows host are accessible from WSL 2 using `host.containers.internal`, `192.168.127.254` or [the IP address of the host machine](https://docs.microsoft.com/en-us/windows/wsl/networking#accessing-windows-networking-apps-from-linux-host-ip).
+`wsl-vpnkit` normally detects the original gateway from the default route and falls back to `/mnt/wsl/resolv.conf` or `/etc/resolv.conf`. When using a custom resolver configuration, set `WSL2_GATEWAY_IP` explicitly if automatic detection is not possible.
 
-### Error messages from `wsl-vpnkit`
+### `gvproxy-windows.exe is not executable`
 
-#### resolv.conf has been modified without setting generateResolvConf
+The distro must have [WSL interoperability](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#interop-settings) enabled. Security policies may only permit Windows executables from specific locations; copy `gvproxy-windows.exe` to an allowed location and set `GVPROXY_PATH`.
 
-`wsl-vpnkit` uses `/mnt/wsl/resolv.conf` to get the WSL 2 gateway IP. If modifying `/etc/resolv.conf` to set a custom DNS configuration, set [`generateResolvConf=false` in `wsl.conf`](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#network-settings).
-
-On older WSL versions where `/mnt/wsl/resolv.conf` is not available, `wsl-vpnkit` will fallback to using `/etc/resolv.conf`. When setup as a standalone script and using a custom DNS configuration for the distro, the `WSL2_GATEWAY_IP` environment variable should be set for `wsl-vpnkit` to use.
-
-#### gvproxy-windows.exe is not executable due to WSL interop settings or Windows permissions
-
-`wsl-vpnkit` requires that the WSL 2 distro be able to run Windows executables. This [`interop` setting](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#interop-settings) is enabled by default in WSL 2 and in the `wsl-vpnkit` distro.
-
-Security configurations on the Windows host may only permit running executables in certain directories. You can copy `gvproxy-windows.exe` to an appropriate location and use the `GVPROXY_PATH` environment variable to specify the location.
+If `/usr/lib/binfmt.d/WSLInterop.conf` is missing, recreate the WSL interop registration and restart `systemd-binfmt`:
 
 ```sh
-# enable [automount] in wsl.conf for wsl-vpnkit distro
-wsl.exe -d wsl-vpnkit --cd /app sed -i -- "s/enabled=false/enabled=true/" /etc/wsl.conf
-
-# set GVPROXY_PATH when running wsl-vpnkit
-wsl.exe -d wsl-vpnkit --cd /app GVPROXY_PATH=/mnt/c/path/gvproxy-windows.exe wsl-vpnkit
+sudo sh -c 'echo :WSLInterop:M::MZ::/init:PF > /usr/lib/binfmt.d/WSLInterop.conf'
+sudo systemctl restart systemd-binfmt
 ```
 
-### Configuring proxies and certificates
-
-`wsl-vpnkit` currently only handles creating a network connection. Proxies and certificates must be configured separately in your distro.
-
-### Configure VS Code Remote WSL Extension
-
-If VS Code takes a long time to open your folder in WSL, [enable the setting "Connect Through Localhost"](https://github.com/microsoft/vscode-docs/blob/main/remote-release-notes/v1_54.md#fix-for-wsl-2-connection-issues-when-behind-a-proxy).
-
-### Try shutting down WSL 2 VM to reset
+### Reset networking state
 
 ```pwsh
-# PowerShell
-
-# shutdown WSL to reset networking state
 wsl --shutdown
-
-# kill any straggler gvproxy-windows processes
 kill -Name gvproxy-windows
 ```
 
-### Run service with debug
+Run `DEBUG=1 wsl-vpnkit` to include shell tracing in diagnostic output.
 
-```sh
-# set the DEBUG environment variable
-wsl.exe -d wsl-vpnkit --cd /app DEBUG=1 wsl-vpnkit
-```
+## Notes
+
+- ICMP is not forwarded outside the gvisor network, so failed external pings are not a reliable health check.
+- Ports on the WSL 2 VM are accessible from Windows through `localhost`.
+- Ports on Windows are accessible from WSL through `host.containers.internal` or `192.168.127.254`.
+- Corporate proxies, DNS suffixes and root certificates may still require distro-specific configuration.
