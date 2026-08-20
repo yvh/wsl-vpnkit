@@ -12,11 +12,11 @@ Before installing `wsl-vpnkit`, try `ping 1.2.3.4` inside WSL 2. If it succeeds,
 
 Download the versioned AMD64 `.wsl` asset and its checksum from the [latest release](https://github.com/yvh/wsl-vpnkit/releases/latest).
 
-Verify the download before opening it:
+Verify the download before installing it:
 
 ```pwsh
 # PowerShell
-$VERSION = "<version>"
+$VERSION = "v0.6.0" # Replace as needed; release tags include the leading "v"
 $FILE = "wsl-vpnkit-$VERSION-amd64.wsl"
 
 $EXPECTED = (Get-Content "$FILE.sha256").Split()[0].ToLower()
@@ -24,7 +24,13 @@ $ACTUAL = (Get-FileHash -Algorithm SHA256 $FILE).Hash.ToLower()
 if ($ACTUAL -ne $EXPECTED) { throw "Checksum verification failed for $FILE" }
 ```
 
-On WSL 2.4.4 or newer, open the `.wsl` file to install the distribution. Then run:
+On WSL 2.4.4 or newer, install the distribution from PowerShell. Double-clicking the `.wsl` file is also supported.
+
+```pwsh
+wsl --install --from-file ".\$FILE"
+```
+
+Then run:
 
 ```sh
 wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
@@ -33,13 +39,17 @@ wsl.exe -d wsl-vpnkit --cd /app wsl-vpnkit
 For an older WSL release, import it explicitly:
 
 ```pwsh
-wsl --import wsl-vpnkit "$env:LOCALAPPDATA\wsl\wsl-vpnkit" .\wsl-vpnkit-<version>-amd64.wsl --version 2
+wsl --import wsl-vpnkit "$env:LOCALAPPDATA\wsl\wsl-vpnkit" ".\$FILE" --version 2
 ```
 
-To update, unregister the old distribution and install the new asset:
+To update, download and verify the new asset as above, then replace the old distribution:
+
+> [!WARNING]
+> `wsl --unregister` permanently deletes the existing `wsl-vpnkit` distribution and all data stored inside it. The dedicated distribution is intended to be disposable; back up any custom files before continuing.
 
 ```pwsh
 wsl --unregister wsl-vpnkit
+wsl --install --from-file ".\$FILE"
 ```
 
 ### Install as a standalone script
@@ -50,7 +60,7 @@ The release distribution can also be unpacked into an existing WSL distro. This 
 sudo apt-get update
 sudo apt-get install iproute2 iptables dnsutils curl jq yq
 
-VERSION="<version>"
+VERSION="v0.6.0" # Replace as needed; release tags include the leading "v"
 FILE="wsl-vpnkit-${VERSION}-amd64.wsl"
 
 curl -fLO "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/${FILE}"
@@ -71,7 +81,21 @@ sudo wsl-vpnkit
 
 ### Set up systemd
 
-WSL versions 0.67.6 and later [support systemd](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#systemd-support). The supplied service uses a local `wsl-vpnkit` installation when available and otherwise invokes the dedicated `wsl-vpnkit` distro.
+WSL versions 0.67.6 and later [support systemd](https://learn.microsoft.com/en-us/windows/wsl/systemd). Enable it in the WSL distro where the service will run if it is not already active:
+
+```ini
+# /etc/wsl.conf
+[boot]
+systemd=true
+```
+
+Restart WSL from PowerShell after changing this setting:
+
+```pwsh
+wsl --shutdown
+```
+
+The supplied service uses a local `wsl-vpnkit` installation when available and otherwise invokes the dedicated `wsl-vpnkit` distro.
 
 ```sh
 # Copy the service from the dedicated distro into the current distro
@@ -84,7 +108,7 @@ systemctl status wsl-vpnkit
 
 ## Configuration
 
-The most commonly used environment variables are:
+The supported environment variables are:
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -96,10 +120,18 @@ The most commonly used environment variables are:
 | `PREEXISTING` | `1` | Create the TAP in the script when `1`; let gvforwarder create it with DHCP when `0`. |
 | `WSL2_GATEWAY_IP` | auto-detected | Original WSL gateway restored during cleanup. |
 | `WSL2_TAP_NAME` | auto-detected | Original WSL interface restored during cleanup. |
+| `WSL2_RESOLVCONF` | `/mnt/wsl/resolv.conf`, then `/etc/resolv.conf` | Resolver file used to detect the original WSL gateway. |
 | `TAP_NAME` | `wsltap` | VPN TAP interface name. |
+| `TAP_MAC_ADDR` | `5a:94:ef:e4:0c:ee` | MAC address assigned to the VPN TAP interface. |
 | `DHCP_TIMEOUT` | `30` | Maximum wait in seconds for a gvforwarder-owned DHCP lease. |
+| `DHCP_POLL_INTERVAL` | `1` | Interval in seconds between DHCP lease checks. |
+| `GVPROXY_SSH_PORT` | `-1` | SSH forwarding port passed to gvproxy; `-1` disables it. |
+| `VPNKIT_GATEWAY_IP` | `192.168.127.1` | Gateway address for the vpnkit network. |
+| `VPNKIT_HOST_IP` | `192.168.127.254` | Address used to reach the Windows host. |
+| `VPNKIT_LOCAL_IP` | `192.168.127.2` | Address assigned to the WSL TAP interface. |
+| `VPNKIT_SUBNET_MASK` | `24` | Prefix length of the vpnkit subnet. |
 
-The repository includes [`wsl-vpnkit.yaml`](wsl-vpnkit.yaml) as a gvproxy configuration example. It can customize the subnet, gateway, virtual IPs, static lease and port forwarding:
+The repository includes [`wsl-vpnkit.yaml`](wsl-vpnkit.yaml) as a gvproxy configuration example. It can customize the subnet, gateway, virtual IPs, static lease and port forwarding. Network values from the YAML file override the corresponding `VPNKIT_*` and TAP defaults:
 
 ```sh
 sudo GVPROXY_CONFIG=/path/to/wsl-vpnkit.yaml PREEXISTING=0 wsl-vpnkit
@@ -107,15 +139,21 @@ sudo GVPROXY_CONFIG=/path/to/wsl-vpnkit.yaml PREEXISTING=0 wsl-vpnkit
 
 ## Build and test
 
-A local build targets the host architecture and produces `./wsl-vpnkit.wsl`:
+A local build on an AMD64 host produces `./wsl-vpnkit.wsl`. This project only supports AMD64; other architectures are not supported.
 
 ```sh
 ./build.sh
 
 # Build with Podman
 DOCKER=podman ./build.sh
+```
 
-# Import the local build
+Import the local build from WSL:
+
+> [!WARNING]
+> `./import.sh` always unregisters and replaces any existing distribution named `wsl-vpnkit`, deleting all data stored inside it.
+
+```sh
 ./import.sh
 ```
 
@@ -127,7 +165,7 @@ Run the Docker test harness with:
 
 The tests exercise startup, cleanup, route and NAT restoration, diagnostics, DHCP mode, configuration parsing, invalid inputs and executable paths containing spaces.
 
-A pushed `v*` tag builds a versioned AMD64 `.wsl` asset. The release workflow publishes its SHA-256 file and build-provenance attestation and embeds SBOM/provenance data in the build.
+A pushed `v*` tag builds a versioned AMD64 `.wsl` asset. The release workflow publishes its SHA-256 file and a build-provenance attestation for the `.wsl` asset.
 
 ## Troubleshooting
 
