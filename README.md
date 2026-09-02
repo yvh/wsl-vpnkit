@@ -16,7 +16,7 @@ Verify the download before installing it:
 
 ```pwsh
 # PowerShell
-$VERSION = "v0.6.0" # Replace as needed; release tags include the leading "v"
+$VERSION = "v0.6.1" # Replace as needed; release tags include the leading "v"
 $FILE = "wsl-vpnkit-$VERSION-amd64.wsl"
 
 $EXPECTED = (Get-Content "$FILE.sha256").Split()[0].ToLower()
@@ -60,7 +60,7 @@ The release distribution can also be unpacked into an existing WSL distro. This 
 sudo apt-get update
 sudo apt-get install iproute2 iptables dnsutils curl jq yq
 
-VERSION="v0.6.0" # Replace as needed; release tags include the leading "v"
+VERSION="v0.6.1" # Replace as needed; release tags include the leading "v"
 FILE="wsl-vpnkit-${VERSION}-amd64.wsl"
 
 curl -fLO "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/${FILE}"
