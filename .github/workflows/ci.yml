@@ -5,11 +5,19 @@ on:
     branches:
       - "**"
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  checksums:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check gvisor-tap-vsock checksums
+        run: ./update-checksums.sh --check
+
   test:
     runs-on: ubuntu-latest
     steps:

@@ -165,6 +165,17 @@ Run the Docker test harness with:
 
 The tests exercise startup, cleanup, route and NAT restoration, diagnostics, DHCP mode, configuration parsing, invalid inputs and executable paths containing spaces.
 
+The `gvisor-tap-vsock` version is pinned in both `Dockerfile` and `tests/docker/Dockerfile`, and the downloaded binaries are verified against `./checksums`. After changing the version, regenerate the checksums from the upstream release:
+
+```sh
+./update-checksums.sh
+
+# Only verify, as CI does
+./update-checksums.sh --check
+```
+
+On Renovate branches, a workflow regenerates `./checksums` automatically and re-runs CI.
+
 A pushed `v*` tag builds a versioned AMD64 `.wsl` asset. The release workflow publishes its SHA-256 file and a build-provenance attestation for the `.wsl` asset.
 
 ## Troubleshooting
