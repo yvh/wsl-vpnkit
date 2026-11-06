@@ -1,6 +1,6 @@
 ARG GVISOR_TAP_VSOCK_VERSION=v0.9.0
 
-FROM docker.io/library/golang:1.26.6 AS gvisor-tap-vsock
+FROM docker.io/library/golang:1.27.3 AS gvisor-tap-vsock
 ARG GVISOR_TAP_VSOCK_VERSION
 WORKDIR /app
 RUN git clone --depth 1 --branch "${GVISOR_TAP_VSOCK_VERSION}" \
@@ -8,7 +8,7 @@ RUN git clone --depth 1 --branch "${GVISOR_TAP_VSOCK_VERSION}" \
     CGO_ENABLED=0 make gvproxy vm && \
     chmod +x ./bin/gvproxy ./bin/gvforwarder
 
-FROM docker.io/library/alpine:3.24.1
+FROM docker.io/library/alpine:3.24.4
 RUN apk update && \
     apk upgrade && \
     apk add iproute2 iptables jq yq && \
