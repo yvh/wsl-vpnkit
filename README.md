@@ -16,7 +16,7 @@ Verify the download before installing it:
 
 ```pwsh
 # PowerShell
-$VERSION = "v0.7.1" # Replace as needed; release tags include the leading "v"
+$VERSION = "v0.7.2" # Replace as needed; release tags include the leading "v"
 $FILE = "wsl-vpnkit-$VERSION-amd64.wsl"
 
 $EXPECTED = (Get-Content "$FILE.sha256").Split()[0].ToLower()
@@ -60,7 +60,7 @@ The release distribution can also be unpacked into an existing WSL distro. This 
 sudo apt-get update
 sudo apt-get install iproute2 iptables dnsutils curl jq yq
 
-VERSION="v0.7.1" # Replace as needed; release tags include the leading "v"
+VERSION="v0.7.2" # Replace as needed; release tags include the leading "v"
 FILE="wsl-vpnkit-${VERSION}-amd64.wsl"
 
 curl -fLO "https://github.com/yvh/wsl-vpnkit/releases/download/${VERSION}/${FILE}"
@@ -110,26 +110,26 @@ systemctl status wsl-vpnkit
 
 The supported environment variables are:
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `DEBUG` | `0` | Enable shell tracing when set to a non-zero value. |
-| `CHECK_HOST` | `host.containers.internal` | Host name used by startup DNS diagnostics. |
-| `GVFORWARDER_PATH` | `gvforwarder` from `PATH` | Path to the Linux forwarder executable. |
-| `GVPROXY_PATH` | `gvproxy-windows.exe` from `PATH` | Path to the Windows proxy executable. |
-| `GVPROXY_CONFIG` | disabled | Path to a gvproxy YAML configuration file. |
-| `PREEXISTING` | `1` | Create the TAP in the script when `1`; let gvforwarder create it with DHCP when `0`. |
-| `WSL2_GATEWAY_IP` | auto-detected | Original WSL gateway restored during cleanup. |
-| `WSL2_TAP_NAME` | auto-detected | Original WSL interface restored during cleanup. |
-| `WSL2_RESOLVCONF` | `/mnt/wsl/resolv.conf`, then `/etc/resolv.conf` | Resolver file used to detect the original WSL gateway. |
-| `TAP_NAME` | `wsltap` | VPN TAP interface name. |
-| `TAP_MAC_ADDR` | `5a:94:ef:e4:0c:ee` | MAC address assigned to the VPN TAP interface. |
-| `DHCP_TIMEOUT` | `30` | Maximum wait in seconds for a gvforwarder-owned DHCP lease. |
-| `DHCP_POLL_INTERVAL` | `1` | Interval in seconds between DHCP lease checks. |
-| `GVPROXY_SSH_PORT` | `-1` | SSH forwarding port passed to gvproxy; `-1` disables it. |
-| `VPNKIT_GATEWAY_IP` | `192.168.127.1` | Gateway address for the vpnkit network. |
-| `VPNKIT_HOST_IP` | `192.168.127.254` | Address used to reach the Windows host. |
-| `VPNKIT_LOCAL_IP` | `192.168.127.2` | Address assigned to the WSL TAP interface. |
-| `VPNKIT_SUBNET_MASK` | `24` | Prefix length of the vpnkit subnet. |
+| Variable             | Default                                         | Description                                                                          |
+| -------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `DEBUG`              | `0`                                             | Enable shell tracing when set to a non-zero value.                                   |
+| `CHECK_HOST`         | `host.containers.internal`                      | Host name used by startup DNS diagnostics.                                           |
+| `GVFORWARDER_PATH`   | `gvforwarder` from `PATH`                       | Path to the Linux forwarder executable.                                              |
+| `GVPROXY_PATH`       | `gvproxy-windows.exe` from `PATH`               | Path to the Windows proxy executable.                                                |
+| `GVPROXY_CONFIG`     | disabled                                        | Path to a gvproxy YAML configuration file.                                           |
+| `PREEXISTING`        | `1`                                             | Create the TAP in the script when `1`; let gvforwarder create it with DHCP when `0`. |
+| `WSL2_GATEWAY_IP`    | auto-detected                                   | Original WSL gateway restored during cleanup.                                        |
+| `WSL2_TAP_NAME`      | auto-detected                                   | Original WSL interface restored during cleanup.                                      |
+| `WSL2_RESOLVCONF`    | `/mnt/wsl/resolv.conf`, then `/etc/resolv.conf` | Resolver file used to detect the original WSL gateway.                               |
+| `TAP_NAME`           | `wsltap`                                        | VPN TAP interface name.                                                              |
+| `TAP_MAC_ADDR`       | `5a:94:ef:e4:0c:ee`                             | MAC address assigned to the VPN TAP interface.                                       |
+| `DHCP_TIMEOUT`       | `30`                                            | Maximum wait in seconds for a gvforwarder-owned DHCP lease.                          |
+| `DHCP_POLL_INTERVAL` | `1`                                             | Interval in seconds between DHCP lease checks.                                       |
+| `GVPROXY_SSH_PORT`   | `-1`                                            | SSH forwarding port passed to gvproxy; `-1` disables it.                             |
+| `VPNKIT_GATEWAY_IP`  | `192.168.127.1`                                 | Gateway address for the vpnkit network.                                              |
+| `VPNKIT_HOST_IP`     | `192.168.127.254`                               | Address used to reach the Windows host.                                              |
+| `VPNKIT_LOCAL_IP`    | `192.168.127.2`                                 | Address assigned to the WSL TAP interface.                                           |
+| `VPNKIT_SUBNET_MASK` | `24`                                            | Prefix length of the vpnkit subnet.                                                  |
 
 The repository includes [`wsl-vpnkit.yaml`](wsl-vpnkit.yaml) as a gvproxy configuration example. It can customize the subnet, gateway, virtual IPs, static lease and port forwarding. Network values from the YAML file override the corresponding `VPNKIT_*` and TAP defaults:
 
